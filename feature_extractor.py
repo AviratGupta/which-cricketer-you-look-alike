@@ -16,13 +16,23 @@
 from tensorflow.keras.preprocessing import image
 from keras_vggface.utils import preprocess_input
 from keras_vggface.vggface import VGGFace
+from keras.layers import Flatten, Dense, Input
+from keras.engine import  Model
 import numpy as np
 import pickle
 from tqdm import tqdm
 
 filenames = pickle.load(open('filenames.pkl','rb'))
 
-model = VGGFace(model='resnet50',include_top=False,input_shape=(224,224,3),pooling='avg')
+hidden_dim=512
+nb_class = 2
+model = VGGFace(model='senet50',include_top=False,input_shape=(224,224,3),pooling='avg')
+last_layer = model.get_layer('pool5').output
+x = Flatten(name='flatten')(last_layer)
+x = Dense(hidden_dim, activation='relu', name='fc6')(x)
+x = Dense(hidden_dim, activation='relu', name='fc7')(x)
+out = Dense(nb_class, activation='softmax', name='fc8')(x)
+custom_vgg_model = Model(model.input, out)
 
 def feature_extractor(img_path,model):
     img = image.load_img(img_path,target_size=(224,224))
@@ -30,7 +40,7 @@ def feature_extractor(img_path,model):
     expanded_img = np.expand_dims(img_array,axis=0)
     preprocessed_img = preprocess_input(expanded_img)
 
-    result = model.predict(preprocessed_img).flatten()
+    result = custom_vgg_model.predict(preprocessed_img).flatten()
 
     return result
 
@@ -39,4 +49,4 @@ features = []
 for file in tqdm(filenames):
     features.append(feature_extractor(file,model))
 
-pickle.dump(features,open('embedding.pkl','wb'))
+pickle.dump(features,open('embedding_vgg.pkl','wb'))

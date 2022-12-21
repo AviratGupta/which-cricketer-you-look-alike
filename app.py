@@ -25,6 +25,7 @@ def save_uploaded_image(uploaded_image):
 def extract_features(img_path,model,detector):
     img = cv2.imread(img_path)
     results = detector.detect_faces(img)
+    # st.text(results)
 
     x, y, width, height = results[0]['box']
 
@@ -51,29 +52,34 @@ def recommend(feature_list,features):
     index_pos = sorted(list(enumerate(similarity)), reverse=True, key=lambda x: x[1])[0][0]
     return index_pos
 
-st.title('Which Cricketer are you?')
+st.title('Which bollywood celebrity are you?')
 
 uploaded_image = st.file_uploader('Choose an image')
 
+
 if uploaded_image is not None:
+    st.image(uploaded_image)
     # save the image in a directory
     if save_uploaded_image(uploaded_image):
         # load the image
         display_image = Image.open(uploaded_image)
-        st.image(display_image)
+
         # extract the features
         features = extract_features(os.path.join('uploads',uploaded_image.name),model,detector)
+
+
         # recommend
-        st.text(features)
-        st.text(features.shape)
         index_pos = recommend(feature_list,features)
-        predicted_cricketer = " ".join(filenames[index_pos].split('\\')[1].split('_'))
+        predicted_actor = " ".join(filenames[index_pos].split('\\')[-2].split('_'))
         # display
-        col1,col2 = st.beta_columns(2)
+        col1,col2 = st.columns(2)
 
         with col1:
             st.header('Your uploaded image')
-            st.image(display_image)
+            # st.title(display_image)
+            st.image(display_image , width=300 )
         with col2:
-            st.header("Seems like " + predicted_cricketer)
-            st.image(filenames[index_pos],width=300)
+            img = cv2.imread(filenames[index_pos])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            st.header("Seems like " + predicted_actor)
+            st.image(img,width=300)
